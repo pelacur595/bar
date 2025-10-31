@@ -34,13 +34,16 @@ init_var() {
   crt_path=""
   key_path=""
 
+  # Subscription service (static web)
+  SUBSCRIBE_PORT=8863
+
   # Caddy2
   CADDY_DATA="/tpdata/caddy/"
   CADDY_CONFIG="${CADDY_DATA}config.json"
   CADDY_LOG="${CADDY_DATA}logs/"
   CADDY_CERT_DIR="${CERT_PATH}certificates/acme-v02.api.letsencrypt.org-directory/"
   caddy_port=80
-  caddy_remote_port=8863
+  caddy_remote_port=${SUBSCRIBE_PORT}
   your_email=""
   ssl_option=1
   ssl_module_type=1
@@ -50,7 +53,7 @@ init_var() {
   NGINX_DATA="/tpdata/nginx/"
   NGINX_CONFIG="${NGINX_DATA}default.conf"
   nginx_port=80
-  nginx_remote_port=8863
+  nginx_remote_port=${SUBSCRIBE_PORT}
   nginx_https=1
 
   # MariaDB
@@ -652,8 +655,7 @@ install_caddy2() {
 
     read -r -p "Please enter the port of Caddy2 (default: 80): " caddy_port
     [[ -z "${caddy_port}" ]] && caddy_port=80
-    read -r -p "Please enter the forwarding port of Caddy2 (default: 8863): " caddy_remote_port
-    [[ -z "${caddy_remote_port}" ]] && caddy_remote_port=8863
+    caddy_remote_port=${SUBSCRIBE_PORT}
 
     echo_content yellow "Tip: Please confirm that the domain name has been resolved to this machine, otherwise the installation may fail"
     while read -r -p "Please enter your domain name (required): " domain; do
@@ -714,6 +716,7 @@ EOF
       echo_content red "\n=============================================================="
       echo_content skyBlue "---> Caddy2+https installation completed"
       echo_content yellow "Certificate Directory: ${CERT_PATH}"
+      echo_content yellow "Subscription service port (fixed): ${SUBSCRIBE_PORT}"
       echo_content red "\n=============================================================="
     else
       echo_content red "---> Caddy2+https installation fails or runs abnormally, please try to repair or uninstall and reinstall"
@@ -805,8 +808,7 @@ install_nginx() {
 
     read -r -p "Please enter the port of Nginx (default: 80): " nginx_port
     [[ -z "${nginx_port}" ]] && nginx_port=80
-    read -r -p "Please enter the forwarding port of Nginx (default: 8863): " nginx_remote_port
-    [[ -z "${nginx_remote_port}" ]] && nginx_remote_port=8863
+    nginx_remote_port=${SUBSCRIBE_PORT}
 
     while read -r -p "Please choose whether to enable https in Nginx? (0/off 1/on default: 1): " nginx_https; do
       if [[ -z ${nginx_https} || ${nginx_https} == 1 ]]; then
@@ -831,6 +833,7 @@ install_nginx() {
 
     if [[ -n $(docker ps -q -f "name=^trojan-panel-nginx$" -f "status=running") ]]; then
       echo_content skyBlue "---> Nginx installation completed"
+      echo_content yellow "Subscription service port (fixed): ${SUBSCRIBE_PORT}"
     else
       echo_content red "---> Nginx installation fails or runs abnormally, please try to repair or uninstall and reinstall"
       exit 0
@@ -1072,6 +1075,8 @@ install_trojan_panel_ui() {
   if [[ -z $(docker ps -a -q -f "name=^trojan-panel-ui$") ]]; then
     echo_content green "---> Install Trojan Panel Frontend"
 
+    echo_content yellow "Subscription service port is fixed at ${SUBSCRIBE_PORT}. Configure the frontend port as needed."
+
     read -r -p "Please enter the IP address of the Trojan Panel Backend (default: local host): " trojan_panel_ip
     [[ -z "${trojan_panel_ip}" ]] && trojan_panel_ip="127.0.0.1"
     read -r -p "Please enter the service port of the Trojan Panel Backend (default: 8081): " trojan_panel_server_port
@@ -1109,6 +1114,7 @@ install_trojan_panel_ui() {
       echo_content red "\n=============================================================="
       echo_content skyBlue "Trojan Panel Frontend installed successfully"
       echo_content yellow "Web management panel address: ${https_flag}://${domain_or_ip}:${trojan_panel_ui_port}"
+      echo_content yellow "Subscription service port (fixed): ${SUBSCRIBE_PORT}"
       echo_content red "\n=============================================================="
     else
       echo_content red "---> Trojan Panel Frontend installation fails or runs abnormally, please try to repair or uninstall and reinstall"
@@ -1592,6 +1598,8 @@ uninstall_all() {
 update_trojan_panel_ui_port() {
   if [[ -n $(docker ps -q -f "name=^trojan-panel-ui$" -f "status=running") ]]; then
     echo_content green "---> Modify Trojan Panel Frontend port"
+
+    echo_content yellow "Subscription service port remains fixed at ${SUBSCRIBE_PORT}."
 
     trojan_panel_ui_port=$(grep 'listen.*ssl' ${UI_NGINX_CONFIG} | awk '{print $2}')
     if [[ -z "${trojan_panel_ui_port}" ]]; then
