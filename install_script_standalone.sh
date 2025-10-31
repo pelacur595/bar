@@ -26,13 +26,16 @@ init_var() {
   DOMAIN_FILE="/tpdata/domain.lock"
   domain=""
 
+  # Subscription service (static web)
+  SUBSCRIBE_PORT=8863
+
   # Caddy2
   CADDY_DATA="/tpdata/caddy/"
   CADDY_CONFIG="${CADDY_DATA}config.json"
   CADDY_LOG="${CADDY_DATA}logs/"
   CADDY_CERT_DIR="${CERT_PATH}certificates/acme-v02.api.letsencrypt.org-directory/"
   caddy_port=80
-  caddy_remote_port=8863
+  caddy_remote_port=${SUBSCRIBE_PORT}
   your_email=""
   ssl_module_type=1
   ssl_module="acme"
@@ -381,8 +384,7 @@ install_caddy2() {
 
     read -r -p "Please enter the port of Caddy2 (default: 80): " caddy_port
     [[ -z "${caddy_port}" ]] && caddy_port=80
-    read -r -p "Please enter the forwarding port of Caddy2 (default: 8863): " caddy_remote_port
-    [[ -z "${caddy_remote_port}" ]] && caddy_remote_port=8863
+    caddy_remote_port=${SUBSCRIBE_PORT}
 
     echo_content yellow "Tip: Please confirm that the domain name has been resolved to this machine, otherwise the installation may fail"
     while read -r -p "Please enter your domain name (required): " domain; do
@@ -431,6 +433,7 @@ EOF
       echo_content red "\n=============================================================="
       echo_content skyBlue "---> Caddy2+https installation completed"
       echo_content yellow "Certificate Directory: ${CERT_PATH}"
+      echo_content yellow "Subscription service port (fixed): ${SUBSCRIBE_PORT}"
       echo_content red "\n=============================================================="
     else
       echo_content red "---> Caddy2+https installation fails or runs abnormally, please try to repair or uninstall and reinstall"
